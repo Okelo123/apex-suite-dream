@@ -8,8 +8,9 @@ import ContactPage from '@/components/ContactPage';
 import FolioPage from '@/components/FolioPage';
 import FrontOfficePage from '@/components/FrontOfficePage';
 import BackOfficePage from '@/components/BackOfficePage';
+import AdminOverviewPage from '@/components/AdminOverviewPage';
 
-type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice';
+type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice' | 'adminoverview';
 
 const Index = () => {
   const { user } = useAppStore();
@@ -28,6 +29,7 @@ const Index = () => {
       case 'folio': return <FolioPage />;
       case 'frontoffice': return <FrontOfficePage />;
       case 'backoffice': return <BackOfficePage />;
+      case 'adminoverview': return <AdminOverviewPage />;
       default: return <LegacyPage />;
     }
   };
