@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export type UserRole = 'guest' | 'staff' | 'admin';
 export type ItemStatus = 'available' | 'occupied' | 'maintenance' | 'lockdown';
@@ -110,7 +111,7 @@ const initialInventory: InventoryItem[] = [
   { id: 'a3', name: 'Golf Course', category: 'amenities', price: 10000, status: 'available', image: amenitiesImg, description: '18-hole championship course with caddy service.' },
 ];
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>()(persist((set, get) => ({
   user: null,
   isLockdown: false,
   cart: [],
@@ -233,5 +234,15 @@ export const useAppStore = create<AppState>((set, get) => ({
           )
         : s.inventory,
     };
+  }),
+}), {
+  name: 'manor-house-storage',
+  partialize: (state) => ({
+    user: state.user,
+    inventory: state.inventory,
+    bookings: state.bookings,
+    transactions: state.transactions,
+    reviews: state.reviews,
+    isLockdown: state.isLockdown,
   }),
 }));
