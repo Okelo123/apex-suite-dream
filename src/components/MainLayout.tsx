@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Crown, UtensilsCrossed, CalendarDays, Gem, MessageSquare, ShoppingBag, Users, Shield, LogOut, Menu, X, Landmark, LayoutDashboard } from 'lucide-react';
 
@@ -23,6 +23,28 @@ const guestNav: { page: Page; label: string; icon: typeof Crown }[] = [
 export default function MainLayout({ currentPage, onNavigate, children }: Props) {
   const { user, logout, cart, isLockdown } = useAppStore();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Auto-logout after 10 minutes of inactivity
+  const INACTIVITY_TIMEOUT = 10 * 60 * 1000;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      logout();
+    }, INACTIVITY_TIMEOUT);
+  }, [logout]);
+
+  useEffect(() => {
+    if (!user) return;
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach(e => window.addEventListener(e, resetTimer));
+    resetTimer();
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [user, resetTimer]);
 
   if (!user) return null;
 
