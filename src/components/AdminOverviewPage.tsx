@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { useAppStore, ItemCategory } from '@/lib/store';
-import { Check, X, Wrench, Lock, User, Crown, UtensilsCrossed, CalendarDays, Gem } from 'lucide-react';
+import { useAppStore, ItemCategory, ItemStatus } from '@/lib/store';
+import { Check, X, Wrench, Lock, User, Crown, UtensilsCrossed, CalendarDays, Gem, Trash2, ChevronDown } from 'lucide-react';
+import { toast } from 'sonner';
 
 const categoryConfig: Record<ItemCategory, { label: string; icon: typeof Crown }> = {
   suite: { label: 'Suites', icon: Crown },
@@ -23,9 +24,12 @@ const statusColors: Record<string, string> = {
   lockdown: 'text-lockdown',
 };
 
+const allStatuses: ItemStatus[] = ['available', 'occupied', 'maintenance', 'lockdown'];
+
 export default function AdminOverviewPage() {
-  const { inventory, bookings, transactions } = useAppStore();
+  const { inventory, bookings, transactions, setItemStatus, cancelBooking } = useAppStore();
   const [activeCategory, setActiveCategory] = useState<ItemCategory | 'all'>('all');
+  const [statusDropdown, setStatusDropdown] = useState<string | null>(null);
 
   const categories: (ItemCategory | 'all')[] = ['all', 'suite', 'dining', 'event', 'amenities'];
   const filtered = activeCategory === 'all' ? inventory : inventory.filter(i => i.category === activeCategory);
@@ -35,6 +39,17 @@ export default function AdminOverviewPage() {
   const totalBooked = inventory.filter(i => i.status === 'occupied').length;
   const totalAvailable = inventory.filter(i => i.status === 'available').length;
   const totalMaintenance = inventory.filter(i => i.status === 'maintenance').length;
+
+  const handleStatusChange = (itemId: string, newStatus: ItemStatus) => {
+    setItemStatus(itemId, newStatus);
+    setStatusDropdown(null);
+    toast.success(`Status updated to ${newStatus}.`);
+  };
+
+  const handleCancelBooking = (bookingId: string, itemName: string) => {
+    cancelBooking(bookingId);
+    toast.success(`Booking for ${itemName} cancelled. Item is now available.`);
+  };
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -90,6 +105,7 @@ export default function AdminOverviewPage() {
               <th className="text-left py-2 px-2">Check In</th>
               <th className="text-left py-2 px-2">Check Out</th>
               <th className="text-left py-2 px-2">Ref</th>
+              <th className="text-center py-2 px-2">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -113,10 +129,35 @@ export default function AdminOverviewPage() {
                     </div>
                   </td>
                   <td className="py-3 px-2">
-                    <span className={`flex items-center gap-1 font-semibold ${statusColors[item.status]}`}>
-                      <StatusIcon className="h-3 w-3" />
-                      {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
-                    </span>
+                    <div className="relative">
+                      <button
+                        onClick={() => setStatusDropdown(statusDropdown === item.id ? null : item.id)}
+                        className={`flex items-center gap-1 font-semibold ${statusColors[item.status]} hover:opacity-80 transition-opacity`}
+                      >
+                        <StatusIcon className="h-3 w-3" />
+                        {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+                        <ChevronDown className="h-3 w-3 ml-0.5" />
+                      </button>
+                      {statusDropdown === item.id && (
+                        <div className="absolute top-full left-0 mt-1 z-20 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[130px]">
+                          {allStatuses.map(s => {
+                            const SIcon = statusIcons[s];
+                            return (
+                              <button
+                                key={s}
+                                onClick={() => handleStatusChange(item.id, s)}
+                                className={`w-full flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-secondary/50 transition-colors ${
+                                  item.status === s ? 'text-primary font-bold' : 'text-foreground'
+                                }`}
+                              >
+                                <SIcon className={`h-3 w-3 ${statusColors[s]}`} />
+                                {s.charAt(0).toUpperCase() + s.slice(1)}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="py-3 px-2 text-right text-foreground">{item.price.toLocaleString()}</td>
                   <td className="py-3 px-2">
@@ -132,6 +173,17 @@ export default function AdminOverviewPage() {
                   <td className="py-3 px-2 text-muted-foreground">{booking?.checkIn || '—'}</td>
                   <td className="py-3 px-2 text-muted-foreground">{booking?.checkOut || '—'}</td>
                   <td className="py-3 px-2 text-primary">{booking?.transactionRef || '—'}</td>
+                  <td className="py-3 px-2 text-center">
+                    {booking && (
+                      <button
+                        onClick={() => handleCancelBooking(booking.id, booking.itemName)}
+                        className="text-destructive hover:text-destructive/80 transition-colors p-1 rounded hover:bg-destructive/10"
+                        title="Cancel booking"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </td>
                 </tr>
               );
             })}
@@ -139,7 +191,7 @@ export default function AdminOverviewPage() {
         </table>
       </div>
 
-      {/* Recent Bookings */}
+      {/* All Bookings */}
       <div>
         <h3 className="text-xs tracking-widest uppercase text-muted-foreground mb-3">All Bookings</h3>
         {bookings.length === 0 ? (
@@ -154,14 +206,23 @@ export default function AdminOverviewPage() {
                     {categoryConfig[b.category].label} • Ref: {b.transactionRef}
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-primary flex items-center gap-1 justify-end">
-                    <User className="h-3 w-3" />
-                    {b.guestName}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {b.checkIn && b.checkOut ? `${b.checkIn} → ${b.checkOut}` : `Booked: ${b.date}`}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-primary flex items-center gap-1 justify-end">
+                      <User className="h-3 w-3" />
+                      {b.guestName}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {b.checkIn && b.checkOut ? `${b.checkIn} → ${b.checkOut}` : `Booked: ${b.date}`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleCancelBooking(b.id, b.itemName)}
+                    className="text-destructive hover:text-destructive/80 transition-colors p-1.5 rounded hover:bg-destructive/10"
+                    title="Cancel booking"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             ))}
