@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export type UserRole = 'guest' | 'staff' | 'admin';
 export type ItemStatus = 'available' | 'occupied' | 'maintenance' | 'lockdown';
