@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAppStore, PaymentMethod } from '@/lib/store';
-import { Trash2, CreditCard, Banknote, Smartphone, Star, X } from 'lucide-react';
+import { Trash2, CreditCard, Banknote, Smartphone, Star, X, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function FolioPage() {
