@@ -64,6 +64,7 @@ interface AppState {
   transactions: Transaction[];
   reviews: Review[];
   inventory: InventoryItem[];
+  bookings: Booking[];
   
   login: (username: string, pin: string, role: UserRole) => boolean;
   register: (username: string, pin: string) => boolean;
