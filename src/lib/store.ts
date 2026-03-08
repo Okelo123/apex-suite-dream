@@ -27,6 +27,18 @@ export interface CartItem {
   checkOut?: string;
 }
 
+export interface Booking {
+  id: string;
+  itemId: string;
+  itemName: string;
+  category: ItemCategory;
+  guestName: string;
+  checkIn?: string;
+  checkOut?: string;
+  date: string;
+  transactionRef: string;
+}
+
 export interface Transaction {
   id: string;
   ref: string;
