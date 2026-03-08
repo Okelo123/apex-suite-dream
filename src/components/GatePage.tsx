@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Crown, Users, Shield, UserPlus, Eye, EyeOff, Fingerprint } from 'lucide-react';
+import { Crown, Users, Shield, UserPlus, Eye, EyeOff, Fingerprint, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import heroImg from '@/assets/hero-estate.jpg';
+import { toast } from 'sonner';
 
-type GateView = 'select' | 'login' | 'register' | 'biometric';
+type GateView = 'select' | 'login' | 'register' | 'biometric' | 'forgot' | 'resetSent';
 
 const roles = [
   { role: 'guest' as const, label: 'GUEST', icon: Crown, desc: 'Explore & book our exclusive offerings' },
@@ -55,6 +57,26 @@ export default function GatePage() {
     
     if (error) {
       setError(error.message || 'Registration failed.');
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    setError('');
+    if (!email.trim()) {
+      setError('Please enter your email address');
+      return;
+    }
+    
+    setIsLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setIsLoading(false);
+    
+    if (error) {
+      setError(error.message);
+    } else {
+      setView('resetSent');
     }
   };
 
@@ -171,6 +193,59 @@ export default function GatePage() {
                 BACK
               </button>
             </div>
+            <button
+              onClick={() => { setView('forgot'); setError(''); }}
+              className="w-full text-center text-xs text-muted-foreground hover:text-primary transition-colors tracking-wider"
+            >
+              FORGOT PASSWORD?
+            </button>
+          </div>
+        )}
+
+        {/* Forgot Password Form */}
+        {view === 'forgot' && (
+          <div className="bg-gradient-card border border-border rounded-lg p-6 space-y-4">
+            <div className="text-center mb-2">
+              <p className="text-xs tracking-[0.3em] uppercase text-primary font-semibold">PASSWORD RECOVERY</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Enter your email to receive a reset link.</p>
+            </div>
+            {error && <p className="text-destructive text-xs text-center">{error}</p>}
+            <div>
+              <label className="text-xs text-muted-foreground uppercase tracking-wider">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="mt-1 w-full bg-secondary border border-border rounded px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary transition-colors"
+                placeholder="Enter your email"
+                onKeyDown={e => e.key === 'Enter' && handleForgotPassword()}
+              />
+            </div>
+            <button
+              onClick={handleForgotPassword}
+              disabled={isLoading}
+              className="w-full py-2.5 bg-gradient-gold text-primary-foreground font-semibold text-sm tracking-wider rounded hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {isLoading ? 'SENDING...' : 'SEND RESET LINK'}
+            </button>
+            <button onClick={() => { setView('login'); setError(''); }} className="w-full py-2 border border-border rounded text-xs text-muted-foreground hover:text-foreground hover:border-primary transition-all flex items-center justify-center gap-1">
+              <ArrowLeft className="h-3 w-3" /> BACK TO LOGIN
+            </button>
+          </div>
+        )}
+
+        {/* Reset Email Sent */}
+        {view === 'resetSent' && (
+          <div className="bg-gradient-card border border-border rounded-lg p-6 text-center space-y-4">
+            <div className="w-12 h-12 mx-auto bg-primary/10 rounded-full flex items-center justify-center">
+              <Crown className="h-6 w-6 text-primary" />
+            </div>
+            <p className="text-sm text-foreground">Password reset link sent to</p>
+            <p className="text-primary font-semibold text-sm">{email}</p>
+            <p className="text-[10px] text-muted-foreground">Check your email and follow the link to reset your password.</p>
+            <button onClick={() => { setView('login'); setError(''); }} className="w-full py-2 border border-border rounded text-xs text-muted-foreground hover:text-foreground hover:border-primary transition-all">
+              BACK TO LOGIN
+            </button>
           </div>
         )}
 
