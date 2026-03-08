@@ -1,5 +1,6 @@
 import { ReactNode, useState, useEffect, useCallback, useRef } from 'react';
-import { useAppStore } from '@/lib/store';
+import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/hooks/useCart';
 import { Crown, UtensilsCrossed, CalendarDays, Gem, MessageSquare, ShoppingBag, Users, Shield, LogOut, Menu, X, Landmark, LayoutDashboard } from 'lucide-react';
 
 type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice' | 'adminoverview';
@@ -21,7 +22,8 @@ const guestNav: { page: Page; label: string; icon: typeof Crown }[] = [
 ];
 
 export default function MainLayout({ currentPage, onNavigate, children }: Props) {
-  const { user, logout, cart, isLockdown } = useAppStore();
+  const { user, signOut } = useAuth();
+  const { cart } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   // Auto-logout after 10 minutes of inactivity
@@ -31,9 +33,9 @@ export default function MainLayout({ currentPage, onNavigate, children }: Props)
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      logout();
+      signOut();
     }, INACTIVITY_TIMEOUT);
-  }, [logout]);
+  }, [signOut]);
 
   useEffect(() => {
     if (!user) return;
@@ -58,7 +60,7 @@ export default function MainLayout({ currentPage, onNavigate, children }: Props)
   }
 
   return (
-    <div className={`min-h-screen bg-background ${isLockdown ? 'lockdown-filter' : ''}`}>
+    <div className="min-h-screen bg-background">
       {/* Top Nav */}
       <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
@@ -91,9 +93,9 @@ export default function MainLayout({ currentPage, onNavigate, children }: Props)
 
           <div className="flex items-center gap-3">
             <span className="hidden sm:block text-xs text-muted-foreground">
-              {user.username} <span className="text-primary">({user.role})</span>
+              {user.email} <span className="text-primary">({user.role})</span>
             </span>
-            <button onClick={logout} className="text-muted-foreground hover:text-foreground transition-colors" title="Logout">
+            <button onClick={signOut} className="text-muted-foreground hover:text-foreground transition-colors" title="Logout">
               <LogOut className="h-4 w-4" />
             </button>
             <button onClick={() => setMobileOpen(!mobileOpen)} className="md:hidden text-foreground">
@@ -125,13 +127,6 @@ export default function MainLayout({ currentPage, onNavigate, children }: Props)
           </div>
         )}
       </nav>
-
-      {/* Lockdown Banner */}
-      {isLockdown && (
-        <div className="bg-destructive text-destructive-foreground text-center py-2 text-xs tracking-widest font-semibold animate-pulse">
-          ⚠ EMERGENCY LOCKDOWN ACTIVE — FOLLOW EVACUATION PROCEDURES ⚠
-        </div>
-      )}
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         {children}

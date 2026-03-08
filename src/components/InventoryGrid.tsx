@@ -1,9 +1,16 @@
 import { useState } from 'react';
-import { useAppStore, InventoryItem, ItemCategory } from '@/lib/store';
+import { useInventory } from '@/hooks/useInventory';
+import { useCart } from '@/hooks/useCart';
+import { useAuth } from '@/hooks/useAuth';
 import { Check, X, Wrench, Lock, ShoppingBag } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
 
-const statusConfig = {
+type ItemCategory = Database['public']['Enums']['item_category'];
+type ItemStatus = Database['public']['Enums']['item_status'];
+type InventoryItem = Database['public']['Tables']['inventory']['Row'];
+
+const statusConfig: Record<ItemStatus, { label: string; color: string; icon: typeof Check }> = {
   available: { label: 'Available', color: 'bg-emerald', icon: Check },
   occupied: { label: 'Occupied', color: 'bg-destructive', icon: X },
   maintenance: { label: 'Maintenance', color: 'bg-accent', icon: Wrench },
@@ -17,7 +24,9 @@ interface Props {
 }
 
 export default function InventoryGrid({ category, title, subtitle }: Props) {
-  const { inventory, addToCart, cart, user } = useAppStore();
+  const { data: inventory = [], isLoading } = useInventory();
+  const { cart, addToCart } = useCart();
+  const { user } = useAuth();
   const items = inventory.filter(i => i.category === category);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
   const [checkIn, setCheckIn] = useState('');
@@ -47,6 +56,22 @@ export default function InventoryGrid({ category, title, subtitle }: Props) {
 
   const formatPrice = (price: number) =>
     `KES ${price.toLocaleString()}`;
+
+  if (isLoading) {
+    return (
+      <div className="animate-fade-in">
+        <div className="mb-6">
+          <h2 className="font-display text-3xl font-bold text-gradient-gold">{title}</h2>
+          <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="bg-gradient-card border border-border rounded-lg h-72 animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="animate-fade-in">

@@ -1,7 +1,13 @@
 import { useState } from 'react';
-import { useAppStore, ItemCategory, ItemStatus } from '@/lib/store';
+import { useInventory, useUpdateItemStatus } from '@/hooks/useInventory';
+import { useBookings, useCancelBooking } from '@/hooks/useBookings';
+import { useTransactions } from '@/hooks/useTransactions';
 import { Check, X, Wrench, Lock, User, Crown, UtensilsCrossed, CalendarDays, Gem, Trash2, ChevronDown } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type ItemCategory = Database['public']['Enums']['item_category'];
+type ItemStatus = Database['public']['Enums']['item_status'];
 
 const categoryConfig: Record<ItemCategory, { label: string; icon: typeof Crown }> = {
   suite: { label: 'Suites', icon: Crown },
@@ -27,29 +33,46 @@ const statusColors: Record<string, string> = {
 const allStatuses: ItemStatus[] = ['available', 'occupied', 'maintenance', 'lockdown'];
 
 export default function AdminOverviewPage() {
-  const { inventory, bookings, transactions, setItemStatus, cancelBooking } = useAppStore();
+  const { data: inventory = [], isLoading: inventoryLoading } = useInventory();
+  const { data: bookings = [], isLoading: bookingsLoading } = useBookings();
+  const { data: transactions = [], isLoading: transactionsLoading } = useTransactions();
+  const updateStatusMutation = useUpdateItemStatus();
+  const cancelBookingMutation = useCancelBooking();
+
   const [activeCategory, setActiveCategory] = useState<ItemCategory | 'all'>('all');
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null);
 
   const categories: (ItemCategory | 'all')[] = ['all', 'suite', 'dining', 'event', 'amenities'];
   const filtered = activeCategory === 'all' ? inventory : inventory.filter(i => i.category === activeCategory);
 
-  const getBookingForItem = (itemId: string) => bookings.find(b => b.itemId === itemId);
+  const getBookingForItem = (itemId: string) => bookings.find((b: any) => b.item_id === itemId);
 
   const totalBooked = inventory.filter(i => i.status === 'occupied').length;
   const totalAvailable = inventory.filter(i => i.status === 'available').length;
   const totalMaintenance = inventory.filter(i => i.status === 'maintenance').length;
 
-  const handleStatusChange = (itemId: string, newStatus: ItemStatus) => {
-    setItemStatus(itemId, newStatus);
-    setStatusDropdown(null);
-    toast.success(`Status updated to ${newStatus}.`);
+  const handleStatusChange = async (itemId: string, newStatus: ItemStatus) => {
+    try {
+      await updateStatusMutation.mutateAsync({ itemId, status: newStatus });
+      setStatusDropdown(null);
+      toast.success(`Status updated to ${newStatus}.`);
+    } catch (error) {
+      toast.error('Failed to update status.');
+    }
   };
 
-  const handleCancelBooking = (bookingId: string, itemName: string) => {
-    cancelBooking(bookingId);
-    toast.success(`Booking for ${itemName} cancelled. Item is now available.`);
+  const handleCancelBooking = async (bookingId: string, itemName: string) => {
+    try {
+      await cancelBookingMutation.mutateAsync(bookingId);
+      toast.success(`Booking for ${itemName} cancelled. Item is now available.`);
+    } catch (error) {
+      toast.error('Failed to cancel booking.');
+    }
   };
+
+  if (inventoryLoading) {
+    return <div className="animate-pulse text-muted-foreground">Loading...</div>;
+  }
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -110,7 +133,7 @@ export default function AdminOverviewPage() {
           </thead>
           <tbody>
             {filtered.map(item => {
-              const booking = getBookingForItem(item.id);
+              const booking: any = getBookingForItem(item.id);
               const StatusIcon = statusIcons[item.status];
               const CatIcon = categoryConfig[item.category].icon;
 
@@ -164,19 +187,19 @@ export default function AdminOverviewPage() {
                     {booking ? (
                       <span className="flex items-center gap-1 text-primary font-semibold">
                         <User className="h-3 w-3" />
-                        {booking.guestName}
+                        {booking.guest_name}
                       </span>
                     ) : (
                       <span className="text-muted-foreground">—</span>
                     )}
                   </td>
-                  <td className="py-3 px-2 text-muted-foreground">{booking?.checkIn || '—'}</td>
-                  <td className="py-3 px-2 text-muted-foreground">{booking?.checkOut || '—'}</td>
-                  <td className="py-3 px-2 text-primary">{booking?.transactionRef || '—'}</td>
+                  <td className="py-3 px-2 text-muted-foreground">{booking?.check_in || '—'}</td>
+                  <td className="py-3 px-2 text-muted-foreground">{booking?.check_out || '—'}</td>
+                  <td className="py-3 px-2 text-primary">{booking?.transaction_ref || '—'}</td>
                   <td className="py-3 px-2 text-center">
                     {booking && (
                       <button
-                        onClick={() => handleCancelBooking(booking.id, booking.itemName)}
+                        onClick={() => handleCancelBooking(booking.id, booking.inventory?.name || item.name)}
                         className="text-destructive hover:text-destructive/80 transition-colors p-1 rounded hover:bg-destructive/10"
                         title="Cancel booking"
                       >
@@ -194,30 +217,32 @@ export default function AdminOverviewPage() {
       {/* All Bookings */}
       <div>
         <h3 className="text-xs tracking-widest uppercase text-muted-foreground mb-3">All Bookings</h3>
-        {bookings.length === 0 ? (
+        {bookingsLoading ? (
+          <div className="animate-pulse bg-gradient-card border border-border rounded-lg p-8" />
+        ) : bookings.length === 0 ? (
           <p className="text-sm text-muted-foreground">No bookings yet.</p>
         ) : (
           <div className="space-y-2">
-            {bookings.map(b => (
+            {bookings.map((b: any) => (
               <div key={b.id} className="bg-gradient-card border border-border rounded-lg p-3 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{b.itemName}</p>
+                  <p className="text-sm font-semibold text-foreground">{b.inventory?.name || 'Item'}</p>
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                    {categoryConfig[b.category].label} • Ref: {b.transactionRef}
+                    {b.inventory?.category ? categoryConfig[b.inventory.category as ItemCategory].label : 'Unknown'} • Ref: {b.transaction_ref}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-right">
                     <p className="text-sm font-semibold text-primary flex items-center gap-1 justify-end">
                       <User className="h-3 w-3" />
-                      {b.guestName}
+                      {b.guest_name}
                     </p>
                     <p className="text-[10px] text-muted-foreground">
-                      {b.checkIn && b.checkOut ? `${b.checkIn} → ${b.checkOut}` : `Booked: ${b.date}`}
+                      {b.check_in && b.check_out ? `${b.check_in} → ${b.check_out}` : `Booked: ${new Date(b.created_at).toLocaleDateString()}`}
                     </p>
                   </div>
                   <button
-                    onClick={() => handleCancelBooking(b.id, b.itemName)}
+                    onClick={() => handleCancelBooking(b.id, b.inventory?.name || 'Item')}
                     className="text-destructive hover:text-destructive/80 transition-colors p-1.5 rounded hover:bg-destructive/10"
                     title="Cancel booking"
                   >
@@ -233,7 +258,9 @@ export default function AdminOverviewPage() {
       {/* Transaction Summary */}
       <div>
         <h3 className="text-xs tracking-widest uppercase text-muted-foreground mb-3">Transaction Summary</h3>
-        {transactions.length === 0 ? (
+        {transactionsLoading ? (
+          <div className="animate-pulse bg-gradient-card border border-border rounded-lg p-8" />
+        ) : transactions.length === 0 ? (
           <p className="text-sm text-muted-foreground">No transactions yet.</p>
         ) : (
           <div className="overflow-x-auto">
@@ -249,14 +276,14 @@ export default function AdminOverviewPage() {
                 </tr>
               </thead>
               <tbody>
-                {transactions.map(t => (
+                {transactions.map((t: any) => (
                   <tr key={t.id} className="border-b border-border/50 text-foreground">
                     <td className="py-2 px-2 text-primary">{t.ref}</td>
-                    <td className="py-2">{t.guestName}</td>
+                    <td className="py-2">{t.guest_name}</td>
                     <td className="py-2 text-muted-foreground">{t.items.join(', ')}</td>
                     <td className="py-2 text-right">KES {t.amount.toLocaleString()}</td>
                     <td className="py-2 px-2">{t.method}</td>
-                    <td className="py-2 text-muted-foreground">{new Date(t.date).toLocaleDateString()}</td>
+                    <td className="py-2 text-muted-foreground">{new Date(t.created_at).toLocaleDateString()}</td>
                   </tr>
                 ))}
               </tbody>
