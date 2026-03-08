@@ -76,6 +76,8 @@ interface AppState {
   addReview: (rating: number, text: string) => void;
   toggleLockdown: () => void;
   bookItem: (itemId: string) => void;
+  setItemStatus: (itemId: string, status: ItemStatus) => void;
+  cancelBooking: (bookingId: string) => void;
 }
 
 // Mock users
