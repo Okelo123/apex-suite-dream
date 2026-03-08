@@ -111,7 +111,7 @@ const initialInventory: InventoryItem[] = [
   { id: 'a3', name: 'Golf Course', category: 'amenities', price: 10000, status: 'available', image: amenitiesImg, description: '18-hole championship course with caddy service.' },
 ];
 
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>()(persist((set, get) => ({
   user: null,
   isLockdown: false,
   cart: [],
