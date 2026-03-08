@@ -1,0 +1,154 @@
+import { useState } from 'react';
+import { useAppStore, PaymentMethod } from '@/lib/store';
+import { Trash2, CreditCard, Banknote, Smartphone, Star, X } from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function FolioPage() {
+  const { cart, removeFromCart, processPayment, addReview } = useAppStore();
+  const [showPayment, setShowPayment] = useState(false);
+  const [payMethod, setPayMethod] = useState<PaymentMethod>('MPESA');
+  const [processing, setProcessing] = useState(false);
+  const [receipt, setReceipt] = useState<{ ref: string; total: number; method: string } | null>(null);
+  const [showReview, setShowReview] = useState(false);
+  const [rating, setRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+
+  const total = cart.reduce((sum, c) => sum + c.item.price, 0);
+
+  const handlePayment = () => {
+    setProcessing(true);
+    setTimeout(() => {
+      const tx = processPayment(payMethod);
+      setProcessing(false);
+      setShowPayment(false);
+      if (tx) {
+        setReceipt({ ref: tx.ref, total: tx.amount, method: tx.method });
+        toast.success('Payment authorized successfully!');
+      }
+    }, 2000);
+  };
+
+  const handleReview = () => {
+    addReview(rating, reviewText);
+    setShowReview(false);
+    setReceipt(null);
+    toast.success('Thank you for your review!');
+  };
+
+  const fmt = (n: number) => `KES ${n.toLocaleString()}`;
+
+  const methods: { m: PaymentMethod; icon: typeof Smartphone; label: string }[] = [
+    { m: 'MPESA', icon: Smartphone, label: 'M-PESA' },
+    { m: 'CASH', icon: Banknote, label: 'Cash' },
+    { m: 'VISA', icon: CreditCard, label: 'VISA' },
+  ];
+
+  return (
+    <div className="animate-fade-in max-w-2xl mx-auto">
+      <h2 className="font-display text-3xl font-bold text-gradient-gold mb-2">Your Folio</h2>
+      <p className="text-sm text-muted-foreground mb-6">Selected items for your stay.</p>
+
+      {cart.length === 0 && !receipt ? (
+        <div className="bg-gradient-card border border-border rounded-lg p-8 text-center">
+          <p className="text-muted-foreground text-sm">Your folio is empty. Explore our offerings to begin.</p>
+        </div>
+      ) : (
+        <>
+          {cart.map(c => (
+            <div key={c.item.id} className="flex items-center gap-4 bg-gradient-card border border-border rounded-lg p-3 mb-3">
+              <img src={c.item.image} alt={c.item.name} className="w-16 h-16 rounded object-cover" />
+              <div className="flex-1 min-w-0">
+                <p className="font-display text-sm font-semibold text-foreground">{c.item.name}</p>
+                <p className="text-xs text-muted-foreground">{c.item.category}</p>
+                {c.checkIn && <p className="text-[10px] text-muted-foreground">{c.checkIn} → {c.checkOut}</p>}
+              </div>
+              <span className="text-primary font-semibold text-sm">{fmt(c.item.price)}</span>
+              <button onClick={() => removeFromCart(c.item.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+
+          {cart.length > 0 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+              <span className="font-display text-lg font-bold text-foreground">Total</span>
+              <span className="font-display text-xl font-bold text-primary">{fmt(total)}</span>
+            </div>
+          )}
+
+          {cart.length > 0 && (
+            <button onClick={() => setShowPayment(true)}
+              className="w-full mt-4 py-3 bg-gradient-gold text-primary-foreground font-semibold text-sm tracking-wider rounded hover:opacity-90 transition-opacity">
+              PROCEED TO CHECKOUT
+            </button>
+          )}
+        </>
+      )}
+
+      {/* Receipt */}
+      {receipt && !showReview && (
+        <div className="mt-6 bg-gradient-card border border-primary/30 rounded-lg p-6 text-center space-y-3">
+          <p className="text-xs text-primary tracking-widest">PAYMENT CONFIRMED</p>
+          <p className="font-display text-2xl font-bold text-foreground">{fmt(receipt.total)}</p>
+          <p className="text-xs text-muted-foreground">Ref: {receipt.ref} • Method: {receipt.method}</p>
+          <button onClick={() => setShowReview(true)}
+            className="mt-2 px-4 py-2 border border-primary rounded text-xs text-primary tracking-wider hover:bg-primary/10 transition-all">
+            LEAVE A REVIEW
+          </button>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {showPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-sm mx-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-lg font-bold text-foreground">Payment</h3>
+              <button onClick={() => setShowPayment(false)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+            </div>
+            <p className="text-sm text-muted-foreground">Total: <span className="text-primary font-semibold">{fmt(total)}</span></p>
+            <div className="grid grid-cols-3 gap-2">
+              {methods.map(({ m, icon: Icon, label }) => (
+                <button key={m} onClick={() => setPayMethod(m)}
+                  className={`py-3 rounded border text-xs tracking-wider flex flex-col items-center gap-1 transition-all ${
+                    payMethod === m ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:text-foreground'
+                  }`}>
+                  <Icon className="h-5 w-5" /> {label}
+                </button>
+              ))}
+            </div>
+            <button onClick={handlePayment} disabled={processing}
+              className="w-full py-2.5 bg-gradient-gold text-primary-foreground font-semibold text-sm tracking-wider rounded hover:opacity-90 disabled:opacity-50 transition-opacity">
+              {processing ? 'AUTHORIZING...' : 'AUTHORIZE PAYMENT'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Review Modal */}
+      {showReview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-lg p-6 w-full max-w-sm mx-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-lg font-bold text-foreground">Your Review</h3>
+              <button onClick={() => { setShowReview(false); setReceipt(null); }} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="flex gap-1 justify-center">
+              {[1,2,3,4,5].map(s => (
+                <button key={s} onClick={() => setRating(s)}>
+                  <Star className={`h-6 w-6 transition-colors ${s <= rating ? 'text-primary fill-primary' : 'text-muted-foreground'}`} />
+                </button>
+              ))}
+            </div>
+            <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} rows={3} placeholder="Share your experience..."
+              className="w-full bg-secondary border border-border rounded px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary resize-none" />
+            <button onClick={handleReview}
+              className="w-full py-2.5 bg-gradient-gold text-primary-foreground font-semibold text-sm tracking-wider rounded hover:opacity-90 transition-opacity">
+              SUBMIT REVIEW
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
