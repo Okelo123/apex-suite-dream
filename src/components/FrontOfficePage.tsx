@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useAppStore } from '@/lib/store';
-import { Check, X, Wrench, Lock, Search, Plus, CheckCircle2 } from 'lucide-react';
+import { useInventory } from '@/hooks/useInventory';
+import { Search, Plus, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const statusColors: Record<string, string> = {
@@ -17,7 +17,7 @@ interface Task {
 }
 
 export default function FrontOfficePage() {
-  const { inventory } = useAppStore();
+  const { data: inventory = [] } = useInventory();
   const suites = inventory.filter(i => i.category === 'suite');
   const [selectedSuite, setSelectedSuite] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');

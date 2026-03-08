@@ -1,30 +1,36 @@
 import { useState } from 'react';
-import { useAppStore } from '@/lib/store';
+import { useInventory, useToggleLockdown } from '@/hooks/useInventory';
+import { useTransactions } from '@/hooks/useTransactions';
 import { TrendingUp, Home, DollarSign, AlertTriangle, ShieldOff, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Tab = 'revenue' | 'channel' | 'tax' | 'audit' | 'templates' | 'lockdown';
 
 export default function BackOfficePage() {
-  const { inventory, transactions, isLockdown, toggleLockdown } = useAppStore();
+  const { data: inventory = [] } = useInventory();
+  const { data: transactions = [] } = useTransactions();
+  const toggleLockdownMutation = useToggleLockdown();
+
   const [activeTab, setActiveTab] = useState<Tab>('revenue');
   const [vatRate, setVatRate] = useState('16');
   const [ledgerAccounts, setLedgerAccounts] = useState('Revenue\nExpenses\nAssets\nLiabilities');
   const [bookingTemplate, setBookingTemplate] = useState('Dear {guest_name},\n\nYour booking at Mileshi Horizon has been confirmed.\nRef: {ref}\n\nWe look forward to welcoming you.\n\nWarm regards,\nMileshi Horizon');
   const [dynamicPricing, setDynamicPricing] = useState('15');
   const [overrideScanning, setOverrideScanning] = useState(false);
+  
+  const isLockdown = inventory.some(i => i.status === 'lockdown');
 
-  const totalRevenue = transactions.reduce((s, t) => s + t.amount, 0);
+  const totalRevenue = transactions.reduce((s, t: any) => s + t.amount, 0);
   const totalSuites = inventory.filter(i => i.category === 'suite').length;
   const occupied = inventory.filter(i => i.category === 'suite' && i.status === 'occupied').length;
   const occupancyRate = totalSuites > 0 ? Math.round((occupied / totalSuites) * 100) : 0;
   const popularRoom = transactions.length
-    ? transactions.flatMap(t => t.items).reduce((acc, item) => {
+    ? transactions.flatMap((t: any) => t.items).reduce((acc: any, item: string) => {
         acc[item] = (acc[item] || 0) + 1;
         return acc;
       }, {} as Record<string, number>)
     : {};
-  const topRoom = Object.entries(popularRoom).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+  const topRoom = Object.entries(popularRoom).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] || 'N/A';
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'revenue', label: 'Revenue' },
@@ -43,17 +49,25 @@ export default function BackOfficePage() {
     { time: '2026-03-06 10:00', user: 'admin', action: 'System maintenance completed' },
   ];
 
-  const handleLockdown = () => {
+  const handleLockdown = async () => {
     if (isLockdown) {
       setOverrideScanning(true);
-      setTimeout(() => {
-        toggleLockdown();
+      setTimeout(async () => {
+        try {
+          await toggleLockdownMutation.mutateAsync(false);
+          toast.success('Lockdown lifted. Normal operations resumed.');
+        } catch (error) {
+          toast.error('Failed to lift lockdown.');
+        }
         setOverrideScanning(false);
-        toast.success('Lockdown lifted. Normal operations resumed.');
       }, 3000);
     } else {
-      toggleLockdown();
-      toast.error('LOCKDOWN INITIATED — All areas secured.');
+      try {
+        await toggleLockdownMutation.mutateAsync(true);
+        toast.error('LOCKDOWN INITIATED — All areas secured.');
+      } catch (error) {
+        toast.error('Failed to initiate lockdown.');
+      }
     }
   };
 
@@ -114,13 +128,13 @@ export default function BackOfficePage() {
                     <th className="text-left py-2 px-2">Ref</th><th className="text-left py-2">Guest</th><th className="text-right py-2">Amount</th><th className="text-left py-2 px-2">Method</th><th className="text-left py-2">Date</th>
                   </tr></thead>
                   <tbody>
-                    {transactions.map(t => (
+                    {transactions.map((t: any) => (
                       <tr key={t.id} className="border-b border-border/50 text-foreground">
                         <td className="py-2 px-2 text-primary">{t.ref}</td>
-                        <td className="py-2">{t.guestName}</td>
+                        <td className="py-2">{t.guest_name}</td>
                         <td className="py-2 text-right">KES {t.amount.toLocaleString()}</td>
                         <td className="py-2 px-2">{t.method}</td>
-                        <td className="py-2 text-muted-foreground">{new Date(t.date).toLocaleDateString()}</td>
+                        <td className="py-2 text-muted-foreground">{new Date(t.created_at).toLocaleDateString()}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -215,7 +229,8 @@ export default function BackOfficePage() {
               </div>
             ) : (
               <button onClick={handleLockdown}
-                className={`px-6 py-2 rounded text-sm tracking-wider font-semibold transition-all ${
+                disabled={toggleLockdownMutation.isPending}
+                className={`px-6 py-2 rounded text-sm tracking-wider font-semibold transition-all disabled:opacity-50 ${
                   isLockdown
                     ? 'bg-emerald text-foreground hover:opacity-90'
                     : 'bg-destructive text-destructive-foreground hover:opacity-90'
