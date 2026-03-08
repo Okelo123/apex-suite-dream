@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect, useCallback, useRef } from 'react';
 import { useAppStore } from '@/lib/store';
 import { Crown, UtensilsCrossed, CalendarDays, Gem, MessageSquare, ShoppingBag, Users, Shield, LogOut, Menu, X, Landmark, LayoutDashboard } from 'lucide-react';
 
