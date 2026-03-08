@@ -24,17 +24,6 @@ export default function MainLayout({ currentPage, onNavigate, children }: Props)
   const { user, logout, cart, isLockdown } = useAppStore();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  if (!user) return null;
-
-  const navItems = [...guestNav];
-  if (user.role === 'staff' || user.role === 'admin') {
-    navItems.push({ page: 'frontoffice', label: 'Front Office', icon: Users });
-  }
-  if (user.role === 'admin') {
-    navItems.push({ page: 'adminoverview', label: 'Overview', icon: LayoutDashboard });
-    navItems.push({ page: 'backoffice', label: 'Back Office', icon: Shield });
-  }
-
   // Auto-logout after 10 minutes of inactivity
   const INACTIVITY_TIMEOUT = 10 * 60 * 1000;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -47,6 +36,7 @@ export default function MainLayout({ currentPage, onNavigate, children }: Props)
   }, [logout]);
 
   useEffect(() => {
+    if (!user) return;
     const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
     events.forEach(e => window.addEventListener(e, resetTimer));
     resetTimer();
@@ -54,7 +44,18 @@ export default function MainLayout({ currentPage, onNavigate, children }: Props)
       events.forEach(e => window.removeEventListener(e, resetTimer));
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [resetTimer]);
+  }, [user, resetTimer]);
+
+  if (!user) return null;
+
+  const navItems = [...guestNav];
+  if (user.role === 'staff' || user.role === 'admin') {
+    navItems.push({ page: 'frontoffice', label: 'Front Office', icon: Users });
+  }
+  if (user.role === 'admin') {
+    navItems.push({ page: 'adminoverview', label: 'Overview', icon: LayoutDashboard });
+    navItems.push({ page: 'backoffice', label: 'Back Office', icon: Shield });
+  }
 
   return (
     <div className={`min-h-screen bg-background ${isLockdown ? 'lockdown-filter' : ''}`}>
