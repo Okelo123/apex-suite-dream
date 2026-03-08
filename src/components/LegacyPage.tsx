@@ -1,9 +1,9 @@
 import heroImg from '@/assets/hero-estate.jpg';
-import { useAppStore } from '@/lib/store';
+import { useReviews } from '@/hooks/useReviews';
 import { Star } from 'lucide-react';
 
 export default function LegacyPage() {
-  const { reviews } = useAppStore();
+  const { data: reviews = [], isLoading } = useReviews();
 
   return (
     <div className="animate-fade-in space-y-10">
@@ -57,19 +57,27 @@ export default function LegacyPage() {
       {/* Reviews */}
       <div>
         <h2 className="font-display text-2xl text-gradient-gold mb-4">Guest Testimonials</h2>
-        <div className="grid md:grid-cols-2 gap-4">
-          {reviews.map(r => (
-            <div key={r.id} className="bg-gradient-card border border-border rounded-lg p-4 space-y-2">
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className={`h-3.5 w-3.5 ${i < r.rating ? 'text-primary fill-primary' : 'text-muted-foreground'}`} />
-                ))}
+        {isLoading ? (
+          <div className="grid md:grid-cols-2 gap-4">
+            {[1, 2].map(i => (
+              <div key={i} className="bg-gradient-card border border-border rounded-lg p-4 h-24 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-4">
+            {reviews.map((r: any) => (
+              <div key={r.id} className="bg-gradient-card border border-border rounded-lg p-4 space-y-2">
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className={`h-3.5 w-3.5 ${i < r.rating ? 'text-primary fill-primary' : 'text-muted-foreground'}`} />
+                  ))}
+                </div>
+                <p className="text-sm text-foreground/80 italic">"{r.text}"</p>
+                <p className="text-xs text-muted-foreground">— {r.guest_name}</p>
               </div>
-              <p className="text-sm text-foreground/80 italic">"{r.text}"</p>
-              <p className="text-xs text-muted-foreground">— {r.guestName}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

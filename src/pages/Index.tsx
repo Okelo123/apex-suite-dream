@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { useAppStore } from '@/lib/store';
+import { useAuth } from '@/hooks/useAuth';
 import GatePage from '@/components/GatePage';
 import MainLayout from '@/components/MainLayout';
 import LegacyPage from '@/components/LegacyPage';
@@ -9,12 +8,23 @@ import FolioPage from '@/components/FolioPage';
 import FrontOfficePage from '@/components/FrontOfficePage';
 import BackOfficePage from '@/components/BackOfficePage';
 import AdminOverviewPage from '@/components/AdminOverviewPage';
+import { useState } from 'react';
 
 type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice' | 'adminoverview';
 
 const Index = () => {
-  const { user } = useAppStore();
+  const { user, loading } = useAuth();
   const [page, setPage] = useState<Page>('legacy');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="animate-pulse text-primary text-lg tracking-widest">LOADING...</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) return <GatePage />;
 

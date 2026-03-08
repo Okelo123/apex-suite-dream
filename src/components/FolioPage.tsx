@@ -1,10 +1,24 @@
 import { useState } from 'react';
-import { useAppStore, PaymentMethod } from '@/lib/store';
+import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/hooks/useCart';
+import { useMyBookings, useCancelBooking, useCreateBooking } from '@/hooks/useBookings';
+import { useCreateTransaction } from '@/hooks/useTransactions';
+import { useCreateReview } from '@/hooks/useReviews';
 import { Trash2, CreditCard, Banknote, Smartphone, Star, X, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
+import type { Database } from '@/integrations/supabase/types';
+
+type PaymentMethod = Database['public']['Enums']['payment_method'];
 
 export default function FolioPage() {
-  const { cart, removeFromCart, processPayment, addReview, bookings, cancelBooking, user } = useAppStore();
+  const { user } = useAuth();
+  const { cart, removeFromCart, clearCart } = useCart();
+  const { data: myBookings = [], isLoading: bookingsLoading } = useMyBookings();
+  const cancelBookingMutation = useCancelBooking();
+  const createBookingMutation = useCreateBooking();
+  const createTransactionMutation = useCreateTransaction();
+  const createReviewMutation = useCreateReview();
+
   const [showPayment, setShowPayment] = useState(false);
   const [payMethod, setPayMethod] = useState<PaymentMethod>('MPESA');
   const [processing, setProcessing] = useState(false);
@@ -15,24 +29,58 @@ export default function FolioPage() {
 
   const total = cart.reduce((sum, c) => sum + c.item.price, 0);
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
+    if (!user) return;
     setProcessing(true);
-    setTimeout(() => {
-      const tx = processPayment(payMethod);
+    
+    try {
+      // Create transaction
+      const tx = await createTransactionMutation.mutateAsync({
+        amount: total,
+        method: payMethod,
+        items: cart.map(c => c.item.name),
+      });
+
+      // Create bookings
+      await createBookingMutation.mutateAsync(
+        cart.map(c => ({
+          item_id: c.item.id,
+          check_in: c.checkIn,
+          check_out: c.checkOut,
+          transaction_ref: tx.ref,
+        }))
+      );
+
+      setReceipt({ ref: tx.ref, total: tx.amount, method: tx.method });
+      clearCart();
+      toast.success('Payment authorized successfully!');
+    } catch (error) {
+      toast.error('Payment failed. Please try again.');
+    } finally {
       setProcessing(false);
       setShowPayment(false);
-      if (tx) {
-        setReceipt({ ref: tx.ref, total: tx.amount, method: tx.method });
-        toast.success('Payment authorized successfully!');
-      }
-    }, 2000);
+    }
   };
 
-  const handleReview = () => {
-    addReview(rating, reviewText);
-    setShowReview(false);
-    setReceipt(null);
-    toast.success('Thank you for your review!');
+  const handleReview = async () => {
+    try {
+      await createReviewMutation.mutateAsync({ rating, text: reviewText });
+      setShowReview(false);
+      setReceipt(null);
+      setReviewText('');
+      toast.success('Thank you for your review!');
+    } catch (error) {
+      toast.error('Failed to submit review.');
+    }
+  };
+
+  const handleCancelBooking = async (bookingId: string, itemName: string) => {
+    try {
+      await cancelBookingMutation.mutateAsync(bookingId);
+      toast.success(`Booking for ${itemName} cancelled.`);
+    } catch (error) {
+      toast.error('Failed to cancel booking.');
+    }
   };
 
   const fmt = (n: number) => `KES ${n.toLocaleString()}`;
@@ -86,41 +134,39 @@ export default function FolioPage() {
       )}
 
       {/* My Bookings */}
-      {user && (() => {
-        const myBookings = bookings.filter(b => b.guestName === user.username);
-        return myBookings.length > 0 ? (
-          <div className="mt-8">
-            <h3 className="text-xs tracking-widest uppercase text-muted-foreground mb-3 flex items-center gap-2">
-              <CalendarDays className="h-3.5 w-3.5" /> My Bookings
-            </h3>
+      {user && myBookings.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-xs tracking-widest uppercase text-muted-foreground mb-3 flex items-center gap-2">
+            <CalendarDays className="h-3.5 w-3.5" /> My Bookings
+          </h3>
+          {bookingsLoading ? (
+            <div className="animate-pulse bg-gradient-card border border-border rounded-lg p-8" />
+          ) : (
             <div className="space-y-2">
-              {myBookings.map(b => (
+              {myBookings.map((b: any) => (
                 <div key={b.id} className="flex items-center gap-4 bg-gradient-card border border-border rounded-lg p-3">
                   <div className="flex-1 min-w-0">
-                    <p className="font-display text-sm font-semibold text-foreground">{b.itemName}</p>
+                    <p className="font-display text-sm font-semibold text-foreground">{b.inventory?.name || 'Item'}</p>
                     <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                      {b.category} • Ref: {b.transactionRef}
+                      {b.inventory?.category || 'Unknown'} • Ref: {b.transaction_ref}
                     </p>
-                    {b.checkIn && b.checkOut && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{b.checkIn} → {b.checkOut}</p>
+                    {b.check_in && b.check_out && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{b.check_in} → {b.check_out}</p>
                     )}
                   </div>
                   <button
-                    onClick={() => {
-                      cancelBooking(b.id);
-                      toast.success(`Booking for ${b.itemName} cancelled.`);
-                    }}
-                    className="px-3 py-1.5 text-xs tracking-wider border border-destructive text-destructive rounded hover:bg-destructive/10 transition-colors font-semibold"
+                    onClick={() => handleCancelBooking(b.id, b.inventory?.name || 'Item')}
+                    disabled={cancelBookingMutation.isPending}
+                    className="px-3 py-1.5 text-xs tracking-wider border border-destructive text-destructive rounded hover:bg-destructive/10 transition-colors font-semibold disabled:opacity-50"
                   >
-                    CANCEL
+                    {cancelBookingMutation.isPending ? 'CANCELLING...' : 'CANCEL'}
                   </button>
                 </div>
               ))}
             </div>
-          </div>
-        ) : null;
-      })()}
-
+          )}
+        </div>
+      )}
 
       {receipt && !showReview && (
         <div className="mt-6 bg-gradient-card border border-primary/30 rounded-lg p-6 text-center space-y-3">
@@ -179,8 +225,9 @@ export default function FolioPage() {
             <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} rows={3} placeholder="Share your experience..."
               className="w-full bg-secondary border border-border rounded px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary resize-none" />
             <button onClick={handleReview}
-              className="w-full py-2.5 bg-gradient-gold text-primary-foreground font-semibold text-sm tracking-wider rounded hover:opacity-90 transition-opacity">
-              SUBMIT REVIEW
+              disabled={createReviewMutation.isPending}
+              className="w-full py-2.5 bg-gradient-gold text-primary-foreground font-semibold text-sm tracking-wider rounded hover:opacity-90 disabled:opacity-50 transition-opacity">
+              {createReviewMutation.isPending ? 'SUBMITTING...' : 'SUBMIT REVIEW'}
             </button>
           </div>
         </div>
