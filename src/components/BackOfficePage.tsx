@@ -17,7 +17,7 @@ export default function BackOfficePage() {
   const totalRevenue = transactions.reduce((s, t) => s + t.amount, 0);
   const totalSuites = inventory.filter(i => i.category === 'suite').length;
   const occupied = inventory.filter(i => i.category === 'suite' && i.status === 'occupied').length;
-  const occupancyRate = totalSuites ? Math.round((occupied / totalSuites) * 100) : 0;
+  const occupancyRate = totalSuites > 0 ? Math.round((occupied / totalSuites) * 100) : 0;
   const popularRoom = transactions.length
     ? transactions.flatMap(t => t.items).reduce((acc, item) => {
         acc[item] = (acc[item] || 0) + 1;
