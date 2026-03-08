@@ -1,13 +1,41 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useState } from 'react';
+import { useAppStore } from '@/lib/store';
+import GatePage from '@/components/GatePage';
+import MainLayout from '@/components/MainLayout';
+import LegacyPage from '@/components/LegacyPage';
+import InventoryGrid from '@/components/InventoryGrid';
+import ContactPage from '@/components/ContactPage';
+import FolioPage from '@/components/FolioPage';
+import FrontOfficePage from '@/components/FrontOfficePage';
+import BackOfficePage from '@/components/BackOfficePage';
+
+type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice';
 
 const Index = () => {
+  const { user } = useAppStore();
+  const [page, setPage] = useState<Page>('legacy');
+
+  if (!user) return <GatePage />;
+
+  const renderPage = () => {
+    switch (page) {
+      case 'legacy': return <LegacyPage />;
+      case 'suites': return <InventoryGrid category="suite" title="Suites" subtitle="Experience sovereign luxury in our exclusive accommodations." />;
+      case 'dining': return <InventoryGrid category="dining" title="Dining" subtitle="World-class gastronomy curated by master chefs." />;
+      case 'events': return <InventoryGrid category="event" title="Events" subtitle="Unforgettable occasions in extraordinary settings." />;
+      case 'amenities': return <InventoryGrid category="amenities" title="Amenities" subtitle="Indulge in our premium facilities and services." />;
+      case 'contact': return <ContactPage />;
+      case 'folio': return <FolioPage />;
+      case 'frontoffice': return <FrontOfficePage />;
+      case 'backoffice': return <BackOfficePage />;
+      default: return <LegacyPage />;
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <MainLayout currentPage={page} onNavigate={setPage}>
+      {renderPage()}
+    </MainLayout>
   );
 };
 
