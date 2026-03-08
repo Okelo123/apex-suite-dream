@@ -235,4 +235,14 @@ export const useAppStore = create<AppState>()(persist((set, get) => ({
         : s.inventory,
     };
   }),
+}), {
+  name: 'manor-house-storage',
+  partialize: (state) => ({
+    user: state.user,
+    inventory: state.inventory,
+    bookings: state.bookings,
+    transactions: state.transactions,
+    reviews: state.reviews,
+    isLockdown: state.isLockdown,
+  }),
 }));
