@@ -35,6 +35,27 @@ export default function MainLayout({ currentPage, onNavigate, children }: Props)
     navItems.push({ page: 'backoffice', label: 'Back Office', icon: Shield });
   }
 
+  // Auto-logout after 10 minutes of inactivity
+  const INACTIVITY_TIMEOUT = 10 * 60 * 1000;
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetTimer = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      logout();
+    }, INACTIVITY_TIMEOUT);
+  }, [logout]);
+
+  useEffect(() => {
+    const events = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach(e => window.addEventListener(e, resetTimer));
+    resetTimer();
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [resetTimer]);
+
   return (
     <div className={`min-h-screen bg-background ${isLockdown ? 'lockdown-filter' : ''}`}>
       {/* Top Nav */}
