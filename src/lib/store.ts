@@ -216,4 +216,22 @@ export const useAppStore = create<AppState>((set, get) => ({
       item.id === itemId ? { ...item, status: 'occupied' as ItemStatus } : item
     ),
   })),
+
+  setItemStatus: (itemId, status) => set(s => ({
+    inventory: s.inventory.map(item =>
+      item.id === itemId ? { ...item, status } : item
+    ),
+  })),
+
+  cancelBooking: (bookingId) => set(s => {
+    const booking = s.bookings.find(b => b.id === bookingId);
+    return {
+      bookings: s.bookings.filter(b => b.id !== bookingId),
+      inventory: booking
+        ? s.inventory.map(item =>
+            item.id === booking.itemId ? { ...item, status: 'available' as ItemStatus } : item
+          )
+        : s.inventory,
+    };
+  }),
 }));
