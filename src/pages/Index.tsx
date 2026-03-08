@@ -29,6 +29,7 @@ const Index = () => {
       case 'folio': return <FolioPage />;
       case 'frontoffice': return <FrontOfficePage />;
       case 'backoffice': return <BackOfficePage />;
+      case 'adminoverview': return <AdminOverviewPage />;
       default: return <LegacyPage />;
     }
   };
