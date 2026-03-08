@@ -1,8 +1,8 @@
 import { ReactNode, useState } from 'react';
 import { useAppStore } from '@/lib/store';
-import { Crown, UtensilsCrossed, CalendarDays, Gem, MessageSquare, ShoppingBag, Users, Shield, LogOut, Menu, X, Landmark } from 'lucide-react';
+import { Crown, UtensilsCrossed, CalendarDays, Gem, MessageSquare, ShoppingBag, Users, Shield, LogOut, Menu, X, Landmark, LayoutDashboard } from 'lucide-react';
 
-type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice';
+type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice' | 'adminoverview';
 
 interface Props {
   currentPage: Page;
