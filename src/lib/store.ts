@@ -118,6 +118,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     { id: 'r2', guestName: 'Mr. Nakamura', rating: 4, text: 'Exquisite dining. The private chef experience was unforgettable.', createdAt: '2026-02-20' },
   ],
   inventory: initialInventory,
+  bookings: [
+    { id: 'b1', itemId: 's3', itemName: 'Garden Suite', category: 'suite', guestName: 'Lady Ashford', checkIn: '2026-03-05', checkOut: '2026-03-10', date: '2026-03-04', transactionRef: 'MH-001' },
+    { id: 'b2', itemId: 'e3', itemName: 'Corporate Retreat', category: 'event', guestName: 'Mr. Nakamura', checkIn: '2026-03-08', checkOut: '2026-03-08', date: '2026-03-01', transactionRef: 'MH-002' },
+  ],
 
   login: (username, pin, role) => {
     const found = registeredUsers.find(u => u.username === username && u.pin === pin && u.role === role);
