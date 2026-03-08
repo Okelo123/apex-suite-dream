@@ -161,9 +161,21 @@ export const useAppStore = create<AppState>((set, get) => ({
       date: new Date().toISOString(),
       items: cart.map(c => c.item.name),
     };
-    // Mark items as occupied
+    // Mark items as occupied and create bookings
+    const newBookings: Booking[] = cart.map(c => ({
+      id: `b${Date.now()}-${c.item.id}`,
+      itemId: c.item.id,
+      itemName: c.item.name,
+      category: c.item.category,
+      guestName: user.username,
+      checkIn: c.checkIn,
+      checkOut: c.checkOut,
+      date: new Date().toISOString().split('T')[0],
+      transactionRef: ref,
+    }));
     set(s => ({
       transactions: [...s.transactions, tx],
+      bookings: [...s.bookings, ...newBookings],
       cart: [],
       inventory: s.inventory.map(item =>
         cart.some(c => c.item.id === item.id) ? { ...item, status: 'occupied' as ItemStatus } : item
