@@ -8,8 +8,9 @@ import ContactPage from '@/components/ContactPage';
 import FolioPage from '@/components/FolioPage';
 import FrontOfficePage from '@/components/FrontOfficePage';
 import BackOfficePage from '@/components/BackOfficePage';
+import AdminOverviewPage from '@/components/AdminOverviewPage';
 
-type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice';
+type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice' | 'adminoverview';
 
 const Index = () => {
   const { user } = useAppStore();
