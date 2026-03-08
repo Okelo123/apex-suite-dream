@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useAppStore, PaymentMethod } from '@/lib/store';
-import { Trash2, CreditCard, Banknote, Smartphone, Star, X } from 'lucide-react';
+import { Trash2, CreditCard, Banknote, Smartphone, Star, X, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function FolioPage() {
-  const { cart, removeFromCart, processPayment, addReview } = useAppStore();
+  const { cart, removeFromCart, processPayment, addReview, bookings, cancelBooking, user } = useAppStore();
   const [showPayment, setShowPayment] = useState(false);
   const [payMethod, setPayMethod] = useState<PaymentMethod>('MPESA');
   const [processing, setProcessing] = useState(false);
@@ -85,7 +85,43 @@ export default function FolioPage() {
         </>
       )}
 
-      {/* Receipt */}
+      {/* My Bookings */}
+      {user && (() => {
+        const myBookings = bookings.filter(b => b.guestName === user.username);
+        return myBookings.length > 0 ? (
+          <div className="mt-8">
+            <h3 className="text-xs tracking-widest uppercase text-muted-foreground mb-3 flex items-center gap-2">
+              <CalendarDays className="h-3.5 w-3.5" /> My Bookings
+            </h3>
+            <div className="space-y-2">
+              {myBookings.map(b => (
+                <div key={b.id} className="flex items-center gap-4 bg-gradient-card border border-border rounded-lg p-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-display text-sm font-semibold text-foreground">{b.itemName}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
+                      {b.category} • Ref: {b.transactionRef}
+                    </p>
+                    {b.checkIn && b.checkOut && (
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{b.checkIn} → {b.checkOut}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      cancelBooking(b.id);
+                      toast.success(`Booking for ${b.itemName} cancelled.`);
+                    }}
+                    className="px-3 py-1.5 text-xs tracking-wider border border-destructive text-destructive rounded hover:bg-destructive/10 transition-colors font-semibold"
+                  >
+                    CANCEL
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null;
+      })()}
+
+
       {receipt && !showReview && (
         <div className="mt-6 bg-gradient-card border border-primary/30 rounded-lg p-6 text-center space-y-3">
           <p className="text-xs text-primary tracking-widest">PAYMENT CONFIRMED</p>
