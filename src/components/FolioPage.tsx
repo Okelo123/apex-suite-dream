@@ -4,7 +4,7 @@ import { Trash2, CreditCard, Banknote, Smartphone, Star, X, CalendarDays } from 
 import { toast } from 'sonner';
 
 export default function FolioPage() {
-  const { cart, removeFromCart, processPayment, addReview } = useAppStore();
+  const { cart, removeFromCart, processPayment, addReview, bookings, cancelBooking, user } = useAppStore();
   const [showPayment, setShowPayment] = useState(false);
   const [payMethod, setPayMethod] = useState<PaymentMethod>('MPESA');
   const [processing, setProcessing] = useState(false);
