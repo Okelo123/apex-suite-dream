@@ -1,9 +1,9 @@
 import { ReactNode, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
-import { Crown, UtensilsCrossed, CalendarDays, Gem, MessageSquare, ShoppingBag, Users, Shield, LogOut, Menu, X, Landmark, LayoutDashboard } from 'lucide-react';
+import { Crown, UtensilsCrossed, CalendarDays, Gem, MessageSquare, ShoppingBag, Users, Shield, LogOut, Menu, X, Landmark, LayoutDashboard, UserCog } from 'lucide-react';
 
-type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice' | 'adminoverview';
+type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice' | 'adminoverview' | 'users';
 
 interface Props {
   currentPage: Page;
@@ -57,6 +57,7 @@ export default function MainLayout({ currentPage, onNavigate, children }: Props)
   if (user.role === 'admin') {
     navItems.push({ page: 'adminoverview', label: 'Overview', icon: LayoutDashboard });
     navItems.push({ page: 'backoffice', label: 'Back Office', icon: Shield });
+    navItems.push({ page: 'users', label: 'Users', icon: UserCog });
   }
 
   return (
