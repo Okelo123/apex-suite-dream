@@ -57,6 +57,7 @@ export default function MainLayout({ currentPage, onNavigate, children }: Props)
   if (user.role === 'admin') {
     navItems.push({ page: 'adminoverview', label: 'Overview', icon: LayoutDashboard });
     navItems.push({ page: 'backoffice', label: 'Back Office', icon: Shield });
+    navItems.push({ page: 'users', label: 'Users', icon: UserCog });
   }
 
   return (

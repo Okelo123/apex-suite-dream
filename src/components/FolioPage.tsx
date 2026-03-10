@@ -54,6 +54,24 @@ export default function FolioPage() {
       setReceipt({ ref: tx.ref, total: tx.amount, method: tx.method });
       clearCart();
       toast.success('Payment authorized successfully!');
+
+      // Send booking confirmation email
+      try {
+        await supabase.functions.invoke('send-booking-email', {
+          body: {
+            guest_name: user.email.split('@')[0],
+            guest_email: user.email,
+            items: cart.map(c => c.item.name),
+            total,
+            ref: tx.ref,
+            check_in: cart[0]?.checkIn || null,
+            check_out: cart[0]?.checkOut || null,
+          },
+        });
+        toast.success('Booking confirmation email sent!');
+      } catch {
+        // Email is non-critical, don't block the flow
+      }
     } catch (error) {
       toast.error('Payment failed. Please try again.');
     } finally {
