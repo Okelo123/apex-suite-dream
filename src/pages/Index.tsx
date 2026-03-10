@@ -8,9 +8,10 @@ import FolioPage from '@/components/FolioPage';
 import FrontOfficePage from '@/components/FrontOfficePage';
 import BackOfficePage from '@/components/BackOfficePage';
 import AdminOverviewPage from '@/components/AdminOverviewPage';
+import UserManagementPage from '@/components/UserManagementPage';
 import { useState } from 'react';
 
-type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice' | 'adminoverview';
+type Page = 'legacy' | 'suites' | 'dining' | 'events' | 'amenities' | 'contact' | 'folio' | 'frontoffice' | 'backoffice' | 'adminoverview' | 'users';
 
 const Index = () => {
   const { user, loading } = useAuth();
