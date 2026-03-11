@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { useMyBookings, useCancelBooking, useCreateBooking } from '@/hooks/useBookings';
 import { useCreateTransaction } from '@/hooks/useTransactions';
 import { useCreateReview } from '@/hooks/useReviews';
-import { Trash2, CreditCard, Banknote, Smartphone, Star, X, CalendarDays } from 'lucide-react';
+import { Trash2, CreditCard, Banknote, Smartphone, Star, X, CalendarDays, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
