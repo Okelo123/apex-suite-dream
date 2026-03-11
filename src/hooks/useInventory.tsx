@@ -5,24 +5,6 @@ import type { Database } from '@/integrations/supabase/types';
 type InventoryItem = Database['public']['Tables']['inventory']['Row'];
 type ItemStatus = Database['public']['Enums']['item_status'];
 
-// Map database images to local assets
-import suiteImg from '@/assets/suite-royal.jpg';
-import diningImg from '@/assets/dining.jpg';
-import eventsImg from '@/assets/events.jpg';
-import amenitiesImg from '@/assets/amenities.jpg';
-
-const imageMap: Record<string, string> = {
-  '/assets/suite-royal.jpg': suiteImg,
-  '/assets/dining.jpg': diningImg,
-  '/assets/events.jpg': eventsImg,
-  '/assets/amenities.jpg': amenitiesImg,
-};
-
-const mapImage = (item: InventoryItem): InventoryItem => ({
-  ...item,
-  image: imageMap[item.image] || item.image,
-});
-
 export function useInventory() {
   return useQuery({
     queryKey: ['inventory'],
@@ -33,7 +15,7 @@ export function useInventory() {
         .order('name');
       
       if (error) throw error;
-      return (data || []).map(mapImage);
+      return data || [];
     },
   });
 }
