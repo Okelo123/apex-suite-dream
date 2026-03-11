@@ -52,7 +52,7 @@ export default function FolioPage() {
         }))
       );
 
-      setReceipt({ ref: tx.ref, total: tx.amount, method: tx.method });
+      setReceipt({ ref: tx.ref, total: tx.amount, method: tx.method, items: cart.map(c => c.item.name), date: new Date().toLocaleString() });
       clearCart();
       toast.success('Payment authorized successfully!');
 
