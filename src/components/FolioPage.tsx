@@ -224,10 +224,17 @@ export default function FolioPage() {
           <p className="text-xs text-primary tracking-widest">PAYMENT CONFIRMED</p>
           <p className="font-display text-2xl font-bold text-foreground">{fmt(receipt.total)}</p>
           <p className="text-xs text-muted-foreground">Ref: {receipt.ref} • Method: {receipt.method}</p>
-          <button onClick={() => setShowReview(true)}
-            className="mt-2 px-4 py-2 border border-primary rounded text-xs text-primary tracking-wider hover:bg-primary/10 transition-all">
-            LEAVE A REVIEW
-          </button>
+          <p className="text-xs text-muted-foreground">{receipt.items.join(', ')}</p>
+          <div className="flex gap-2 justify-center mt-3">
+            <button onClick={handleDownloadReceipt}
+              className="px-4 py-2 border border-primary rounded text-xs text-primary tracking-wider hover:bg-primary/10 transition-all flex items-center gap-1.5">
+              <Download className="h-3.5 w-3.5" /> DOWNLOAD RECEIPT
+            </button>
+            <button onClick={() => setShowReview(true)}
+              className="px-4 py-2 border border-primary rounded text-xs text-primary tracking-wider hover:bg-primary/10 transition-all">
+              LEAVE A REVIEW
+            </button>
+          </div>
         </div>
       )}
 
