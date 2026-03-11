@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { useMyBookings, useCancelBooking, useCreateBooking } from '@/hooks/useBookings';
 import { useCreateTransaction } from '@/hooks/useTransactions';
 import { useCreateReview } from '@/hooks/useReviews';
-import { Trash2, CreditCard, Banknote, Smartphone, Star, X, CalendarDays } from 'lucide-react';
+import { Trash2, CreditCard, Banknote, Smartphone, Star, X, CalendarDays, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -23,7 +23,7 @@ export default function FolioPage() {
   const [showPayment, setShowPayment] = useState(false);
   const [payMethod, setPayMethod] = useState<PaymentMethod>('MPESA');
   const [processing, setProcessing] = useState(false);
-  const [receipt, setReceipt] = useState<{ ref: string; total: number; method: string } | null>(null);
+  const [receipt, setReceipt] = useState<{ ref: string; total: number; method: string; items: string[]; date: string } | null>(null);
   const [showReview, setShowReview] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
@@ -52,7 +52,7 @@ export default function FolioPage() {
         }))
       );
 
-      setReceipt({ ref: tx.ref, total: tx.amount, method: tx.method });
+      setReceipt({ ref: tx.ref, total: tx.amount, method: tx.method, items: cart.map(c => c.item.name), date: new Date().toLocaleString() });
       clearCart();
       toast.success('Payment authorized successfully!');
 
@@ -103,6 +103,38 @@ export default function FolioPage() {
   };
 
   const fmt = (n: number) => `KES ${n.toLocaleString()}`;
+
+  const handleDownloadReceipt = async () => {
+    if (!receipt) return;
+    const html2pdf = (await import('html2pdf.js')).default;
+    const el = document.createElement('div');
+    el.innerHTML = `
+      <div style="font-family: Georgia, serif; padding: 40px; max-width: 500px; margin: auto; color: #1a1a1a;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1 style="font-size: 24px; margin: 0; color: #b8860b;">Apex Estate</h1>
+          <p style="font-size: 12px; color: #666; margin: 4px 0;">Official Payment Receipt</p>
+        </div>
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 16px 0;" />
+        <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+          <tr><td style="padding: 6px 0; color: #666;">Reference</td><td style="padding: 6px 0; text-align: right; font-weight: bold;">${receipt.ref}</td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Date</td><td style="padding: 6px 0; text-align: right;">${receipt.date}</td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Payment Method</td><td style="padding: 6px 0; text-align: right;">${receipt.method}</td></tr>
+          <tr><td style="padding: 6px 0; color: #666;">Guest</td><td style="padding: 6px 0; text-align: right;">${user?.email || 'Guest'}</td></tr>
+        </table>
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 16px 0;" />
+        <h3 style="font-size: 13px; color: #666; margin-bottom: 8px;">Items</h3>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          ${receipt.items.map(i => `<li style="padding: 4px 0; font-size: 13px; border-bottom: 1px solid #f0f0f0;">• ${i}</li>`).join('')}
+        </ul>
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 16px 0;" />
+        <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: bold;">
+          <span>Total</span><span style="color: #b8860b;">${fmt(receipt.total)}</span>
+        </div>
+        <p style="text-align: center; font-size: 10px; color: #999; margin-top: 32px;">Thank you for choosing Apex Estate</p>
+      </div>
+    `;
+    html2pdf().set({ margin: 0, filename: `receipt-${receipt.ref}.pdf`, html2canvas: { scale: 2 } }).from(el).save();
+  };
 
   const methods: { m: PaymentMethod; icon: typeof Smartphone; label: string }[] = [
     { m: 'MPESA', icon: Smartphone, label: 'M-PESA' },
@@ -192,10 +224,17 @@ export default function FolioPage() {
           <p className="text-xs text-primary tracking-widest">PAYMENT CONFIRMED</p>
           <p className="font-display text-2xl font-bold text-foreground">{fmt(receipt.total)}</p>
           <p className="text-xs text-muted-foreground">Ref: {receipt.ref} • Method: {receipt.method}</p>
-          <button onClick={() => setShowReview(true)}
-            className="mt-2 px-4 py-2 border border-primary rounded text-xs text-primary tracking-wider hover:bg-primary/10 transition-all">
-            LEAVE A REVIEW
-          </button>
+          <p className="text-xs text-muted-foreground">{receipt.items.join(', ')}</p>
+          <div className="flex gap-2 justify-center mt-3">
+            <button onClick={handleDownloadReceipt}
+              className="px-4 py-2 border border-primary rounded text-xs text-primary tracking-wider hover:bg-primary/10 transition-all flex items-center gap-1.5">
+              <Download className="h-3.5 w-3.5" /> DOWNLOAD RECEIPT
+            </button>
+            <button onClick={() => setShowReview(true)}
+              className="px-4 py-2 border border-primary rounded text-xs text-primary tracking-wider hover:bg-primary/10 transition-all">
+              LEAVE A REVIEW
+            </button>
+          </div>
         </div>
       )}
 
