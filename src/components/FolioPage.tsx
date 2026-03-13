@@ -34,10 +34,72 @@ export default function FolioPage() {
 
   const handlePayment = async () => {
     if (!user) return;
+
+    // Validate phone for M-Pesa
+    if (payMethod === 'MPESA') {
+      const cleanPhone = phoneNumber.replace(/\s+/g, '');
+      if (!cleanPhone || !/^(?:\+?254|0)\d{9}$/.test(cleanPhone)) {
+        toast.error('Please enter a valid Kenyan phone number (e.g. 0712345678)');
+        return;
+      }
+    }
+
     setProcessing(true);
     
     try {
-      // Create transaction
+      const ref = `MH-${Date.now().toString(36).toUpperCase()}`;
+
+      if (payMethod === 'MPESA') {
+        // Format phone to 254 format
+        let formattedPhone = phoneNumber.replace(/\s+/g, '');
+        if (formattedPhone.startsWith('0')) {
+          formattedPhone = '254' + formattedPhone.slice(1);
+        } else if (formattedPhone.startsWith('+')) {
+          formattedPhone = formattedPhone.slice(1);
+        }
+
+        // Initiate Paystack M-Pesa charge
+        const { data: chargeResult, error: chargeError } = await supabase.functions.invoke('paystack-charge', {
+          body: {
+            email: user.email,
+            amount: total,
+            phone: formattedPhone,
+            ref,
+          },
+        });
+
+        if (chargeError || !chargeResult?.success) {
+          throw new Error(chargeResult?.error || 'Failed to initiate M-Pesa payment');
+        }
+
+        setPaymentStatus('stk_sent');
+        toast.success('STK Push sent! Check your phone to complete payment.');
+
+        // Poll for verification
+        setPaymentStatus('verifying');
+        let verified = false;
+        for (let i = 0; i < 12; i++) {
+          await new Promise(r => setTimeout(r, 5000));
+          
+          const { data: verifyResult } = await supabase.functions.invoke('paystack-verify', {
+            body: { reference: ref },
+          });
+
+          if (verifyResult?.success) {
+            verified = true;
+            break;
+          }
+        }
+
+        if (!verified) {
+          toast.error('Payment not confirmed. Please try again or check your M-Pesa.');
+          setPaymentStatus('idle');
+          setProcessing(false);
+          return;
+        }
+      }
+
+      // Create transaction record
       const tx = await createTransactionMutation.mutateAsync({
         amount: total,
         method: payMethod,
@@ -57,6 +119,7 @@ export default function FolioPage() {
       setReceipt({ ref: tx.ref, total: tx.amount, method: tx.method, items: cart.map(c => c.item.name), date: new Date().toLocaleString() });
       clearCart();
       toast.success('Payment authorized successfully!');
+      setPaymentStatus('idle');
 
       // Send booking confirmation email
       try {
@@ -73,13 +136,14 @@ export default function FolioPage() {
         });
         toast.success('Booking confirmation email sent!');
       } catch {
-        // Email is non-critical, don't block the flow
+        // Email is non-critical
       }
-    } catch (error) {
-      toast.error('Payment failed. Please try again.');
+    } catch (error: any) {
+      toast.error(error?.message || 'Payment failed. Please try again.');
     } finally {
       setProcessing(false);
       setShowPayment(false);
+      setPaymentStatus('idle');
     }
   };
 
