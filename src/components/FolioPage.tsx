@@ -310,7 +310,7 @@ export default function FolioPage() {
           <div className="bg-card border border-border rounded-lg p-6 w-full max-w-sm mx-4 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-display text-lg font-bold text-foreground">Payment</h3>
-              <button onClick={() => setShowPayment(false)} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
+              <button onClick={() => { setShowPayment(false); setPaymentStatus('idle'); }} className="text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>
             </div>
             <p className="text-sm text-muted-foreground">Total: <span className="text-primary font-semibold">{fmt(total)}</span></p>
             <div className="grid grid-cols-3 gap-2">
@@ -323,9 +323,35 @@ export default function FolioPage() {
                 </button>
               ))}
             </div>
+
+            {payMethod === 'MPESA' && (
+              <div>
+                <label className="text-[10px] text-muted-foreground uppercase tracking-wider">M-Pesa Phone Number</label>
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={e => setPhoneNumber(e.target.value)}
+                  placeholder="0712345678"
+                  className="w-full bg-secondary border border-border rounded px-3 py-2 text-sm text-foreground focus:outline-none focus:border-primary mt-1"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">You'll receive an STK push on this number</p>
+              </div>
+            )}
+
+            {paymentStatus === 'stk_sent' && (
+              <div className="bg-primary/10 border border-primary/30 rounded p-3 text-center">
+                <p className="text-xs text-primary font-semibold animate-pulse">STK Push sent! Check your phone...</p>
+              </div>
+            )}
+            {paymentStatus === 'verifying' && (
+              <div className="bg-primary/10 border border-primary/30 rounded p-3 text-center">
+                <p className="text-xs text-primary font-semibold animate-pulse">Verifying payment...</p>
+              </div>
+            )}
+
             <button onClick={handlePayment} disabled={processing}
               className="w-full py-2.5 bg-gradient-gold text-primary-foreground font-semibold text-sm tracking-wider rounded hover:opacity-90 disabled:opacity-50 transition-opacity">
-              {processing ? 'AUTHORIZING...' : 'AUTHORIZE PAYMENT'}
+              {processing ? (paymentStatus === 'stk_sent' ? 'WAITING FOR STK...' : paymentStatus === 'verifying' ? 'VERIFYING...' : 'PROCESSING...') : 'AUTHORIZE PAYMENT'}
             </button>
           </div>
         </div>
