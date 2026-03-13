@@ -24,6 +24,8 @@ export default function FolioPage() {
   const [payMethod, setPayMethod] = useState<PaymentMethod>('MPESA');
   const [processing, setProcessing] = useState(false);
   const [receipt, setReceipt] = useState<{ ref: string; total: number; method: string; items: string[]; date: string } | null>(null);
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'stk_sent' | 'verifying'>('idle');
   const [showReview, setShowReview] = useState(false);
   const [rating, setRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
