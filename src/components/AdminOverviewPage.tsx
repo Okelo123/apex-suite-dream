@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useInventory, useUpdateItemStatus } from '@/hooks/useInventory';
 import { useBookings, useCancelBooking } from '@/hooks/useBookings';
 import { useTransactions } from '@/hooks/useTransactions';
-import { Check, X, Wrench, Lock, User, Crown, UtensilsCrossed, CalendarDays, Gem, Trash2, ChevronDown } from 'lucide-react';
+import { Check, X, Wrench, Lock, User, Crown, UtensilsCrossed, CalendarDays, Gem, Trash2, ChevronDown, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
