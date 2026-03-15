@@ -132,6 +132,14 @@ export default function BackOfficePage() {
       {/* Revenue */}
       {activeTab === 'revenue' && (
         <div className="space-y-6">
+          <div className="flex gap-2 justify-end">
+            <button onClick={handleRevenueReport} className="flex items-center gap-1.5 px-3 py-1.5 border border-primary rounded text-xs text-primary tracking-wider hover:bg-primary/10 transition-all">
+              <Download className="h-3.5 w-3.5" /> Revenue Report
+            </button>
+            <button onClick={handleOccupancyReport} className="flex items-center gap-1.5 px-3 py-1.5 border border-primary rounded text-xs text-primary tracking-wider hover:bg-primary/10 transition-all">
+              <Download className="h-3.5 w-3.5" /> Occupancy Report
+            </button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-gradient-card border border-border rounded-lg p-4">
               <div className="flex items-center gap-2 text-muted-foreground text-xs"><DollarSign className="h-4 w-4" /> Total Revenue</div>
