@@ -10,6 +10,7 @@ type Tab = 'revenue' | 'channel' | 'tax' | 'audit' | 'templates' | 'lockdown';
 export default function BackOfficePage() {
   const { data: inventory = [] } = useInventory();
   const { data: transactions = [] } = useTransactions();
+  const { data: bookings = [] } = useBookings();
   const toggleLockdownMutation = useToggleLockdown();
 
   const [activeTab, setActiveTab] = useState<Tab>('revenue');
