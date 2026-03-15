@@ -34,6 +34,46 @@ export default function BackOfficePage() {
     : {};
   const topRoom = Object.entries(popularRoom).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] || 'N/A';
 
+  const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
+    const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleRevenueReport = () => {
+    if (transactions.length === 0) { toast.error('No transactions to export.'); return; }
+    downloadCSV('revenue-report.csv',
+      ['Ref', 'Guest', 'Amount (KES)', 'Method', 'Items', 'Date'],
+      transactions.map((t: any) => [t.ref, t.guest_name, String(t.amount), t.method, t.items.join('; '), new Date(t.created_at).toLocaleDateString()])
+    );
+    toast.success('Revenue report downloaded.');
+  };
+
+  const handleOccupancyReport = () => {
+    if (inventory.length === 0) { toast.error('No inventory data.'); return; }
+    const suites = inventory.filter(i => i.category === 'suite');
+    const occ = suites.filter(i => i.status === 'occupied').length;
+    const avail = suites.filter(i => i.status === 'available').length;
+    const maint = suites.filter(i => i.status === 'maintenance').length;
+    const rows = [
+      ['Total Suites', String(suites.length), '', '', ''],
+      ['Occupied', String(occ), `${suites.length > 0 ? Math.round((occ / suites.length) * 100) : 0}%`, '', ''],
+      ['Available', String(avail), '', '', ''],
+      ['Maintenance', String(maint), '', '', ''],
+      ['', '', '', '', ''],
+      ['Suite Name', 'Status', 'Price (KES)', 'Guest', 'Booking Ref'],
+      ...suites.map(s => {
+        const booking: any = bookings.find((b: any) => b.item_id === s.id);
+        return [s.name, s.status, String(s.price), booking?.guest_name || '—', booking?.transaction_ref || '—'];
+      }),
+    ];
+    downloadCSV('occupancy-report.csv', ['Metric', 'Value', 'Rate', '', ''], rows);
+    toast.success('Occupancy report downloaded.');
+  };
+
   const tabs: { id: Tab; label: string }[] = [
     { id: 'revenue', label: 'Revenue' },
     { id: 'channel', label: 'Channel Mgr' },
