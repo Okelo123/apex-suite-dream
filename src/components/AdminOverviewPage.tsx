@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useInventory, useUpdateItemStatus } from '@/hooks/useInventory';
 import { useBookings, useCancelBooking } from '@/hooks/useBookings';
 import { useTransactions } from '@/hooks/useTransactions';
-import { Check, X, Wrench, Lock, User, Crown, UtensilsCrossed, CalendarDays, Gem, Trash2, ChevronDown } from 'lucide-react';
+import { Check, X, Wrench, Lock, User, Crown, UtensilsCrossed, CalendarDays, Gem, Trash2, ChevronDown, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -41,7 +42,23 @@ export default function AdminOverviewPage() {
 
   const [activeCategory, setActiveCategory] = useState<ItemCategory | 'all'>('all');
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null);
+  const [refunding, setRefunding] = useState<string | null>(null);
 
+  const handleRefund = async (transactionRef: string, amount: number) => {
+    if (!confirm(`Process refund of KES ${amount.toLocaleString()} for ref ${transactionRef}?`)) return;
+    setRefunding(transactionRef);
+    try {
+      const { data, error } = await supabase.functions.invoke('paystack-refund', {
+        body: { transaction_ref: transactionRef, amount },
+      });
+      if (error || !data?.success) throw new Error(data?.error || 'Refund failed');
+      toast.success(`Refund of KES ${amount.toLocaleString()} processed for ${transactionRef}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Refund failed');
+    } finally {
+      setRefunding(null);
+    }
+  };
   const categories: (ItemCategory | 'all')[] = ['all', 'suite', 'dining', 'event', 'amenities'];
   const filtered = activeCategory === 'all' ? inventory : inventory.filter(i => i.category === activeCategory);
 
@@ -273,6 +290,7 @@ export default function AdminOverviewPage() {
                   <th className="text-right py-2">Amount</th>
                   <th className="text-left py-2 px-2">Method</th>
                   <th className="text-left py-2">Date</th>
+                  <th className="text-center py-2 px-2">Refund</th>
                 </tr>
               </thead>
               <tbody>
@@ -284,6 +302,16 @@ export default function AdminOverviewPage() {
                     <td className="py-2 text-right">KES {t.amount.toLocaleString()}</td>
                     <td className="py-2 px-2">{t.method}</td>
                     <td className="py-2 text-muted-foreground">{new Date(t.created_at).toLocaleDateString()}</td>
+                    <td className="py-2 px-2 text-center">
+                      <button
+                        onClick={() => handleRefund(t.ref, t.amount)}
+                        disabled={refunding === t.ref}
+                        className="text-destructive hover:text-destructive/80 transition-colors p-1 rounded hover:bg-destructive/10 disabled:opacity-50"
+                        title="Process refund"
+                      >
+                        <RotateCcw className={`h-3.5 w-3.5 ${refunding === t.ref ? 'animate-spin' : ''}`} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
