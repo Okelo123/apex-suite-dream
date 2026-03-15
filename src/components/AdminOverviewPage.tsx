@@ -290,6 +290,7 @@ export default function AdminOverviewPage() {
                   <th className="text-right py-2">Amount</th>
                   <th className="text-left py-2 px-2">Method</th>
                   <th className="text-left py-2">Date</th>
+                  <th className="text-center py-2 px-2">Refund</th>
                 </tr>
               </thead>
               <tbody>
@@ -301,6 +302,16 @@ export default function AdminOverviewPage() {
                     <td className="py-2 text-right">KES {t.amount.toLocaleString()}</td>
                     <td className="py-2 px-2">{t.method}</td>
                     <td className="py-2 text-muted-foreground">{new Date(t.created_at).toLocaleDateString()}</td>
+                    <td className="py-2 px-2 text-center">
+                      <button
+                        onClick={() => handleRefund(t.ref, t.amount)}
+                        disabled={refunding === t.ref}
+                        className="text-destructive hover:text-destructive/80 transition-colors p-1 rounded hover:bg-destructive/10 disabled:opacity-50"
+                        title="Process refund"
+                      >
+                        <RotateCcw className={`h-3.5 w-3.5 ${refunding === t.ref ? 'animate-spin' : ''}`} />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
