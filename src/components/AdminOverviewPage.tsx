@@ -42,8 +42,23 @@ export default function AdminOverviewPage() {
 
   const [activeCategory, setActiveCategory] = useState<ItemCategory | 'all'>('all');
   const [statusDropdown, setStatusDropdown] = useState<string | null>(null);
+  const [refunding, setRefunding] = useState<string | null>(null);
 
-  const categories: (ItemCategory | 'all')[] = ['all', 'suite', 'dining', 'event', 'amenities'];
+  const handleRefund = async (transactionRef: string, amount: number) => {
+    if (!confirm(`Process refund of KES ${amount.toLocaleString()} for ref ${transactionRef}?`)) return;
+    setRefunding(transactionRef);
+    try {
+      const { data, error } = await supabase.functions.invoke('paystack-refund', {
+        body: { transaction_ref: transactionRef, amount },
+      });
+      if (error || !data?.success) throw new Error(data?.error || 'Refund failed');
+      toast.success(`Refund of KES ${amount.toLocaleString()} processed for ${transactionRef}`);
+    } catch (err: any) {
+      toast.error(err.message || 'Refund failed');
+    } finally {
+      setRefunding(null);
+    }
+  };
   const filtered = activeCategory === 'all' ? inventory : inventory.filter(i => i.category === activeCategory);
 
   const getBookingForItem = (itemId: string) => bookings.find((b: any) => b.item_id === itemId);
