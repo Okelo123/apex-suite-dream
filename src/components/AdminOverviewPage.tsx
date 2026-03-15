@@ -59,6 +59,7 @@ export default function AdminOverviewPage() {
       setRefunding(null);
     }
   };
+  const categories: (ItemCategory | 'all')[] = ['all', 'suite', 'dining', 'event', 'amenities'];
   const filtered = activeCategory === 'all' ? inventory : inventory.filter(i => i.category === activeCategory);
 
   const getBookingForItem = (itemId: string) => bookings.find((b: any) => b.item_id === itemId);
