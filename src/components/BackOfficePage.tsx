@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useInventory, useToggleLockdown } from '@/hooks/useInventory';
 import { useTransactions } from '@/hooks/useTransactions';
-import { TrendingUp, Home, DollarSign, AlertTriangle, ShieldOff, Shield } from 'lucide-react';
+import { useBookings } from '@/hooks/useBookings';
+import { TrendingUp, Home, DollarSign, AlertTriangle, ShieldOff, Shield, Download } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Tab = 'revenue' | 'channel' | 'tax' | 'audit' | 'templates' | 'lockdown';
