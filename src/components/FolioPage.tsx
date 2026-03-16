@@ -50,14 +50,24 @@ export default function FolioPage() {
       const ref = `MH-${Date.now().toString(36).toUpperCase()}`;
 
       if (payMethod === 'MPESA') {
-        // Simulate STK push
+        // Send real STK Push via edge function
         setPaymentStatus('stk_sent');
-        toast.success('STK Push sent! Check your phone to complete payment.');
-        await new Promise(r => setTimeout(r, 2000));
+        const { data: stkResult, error: stkError } = await supabase.functions.invoke('mpesa-stk-push', {
+          body: { phone: phoneNumber, amount: total, ref },
+        });
 
-        // Simulate verification
+        if (stkError || !stkResult?.success) {
+          toast.error(stkResult?.message || stkError?.message || 'STK Push failed');
+          setProcessing(false);
+          setPaymentStatus('idle');
+          return;
+        }
+
+        toast.success(stkResult.message || 'STK Push sent! Check your phone.');
+
+        // Wait for user to complete on phone
         setPaymentStatus('verifying');
-        await new Promise(r => setTimeout(r, 2000));
+        await new Promise(r => setTimeout(r, 5000));
       }
 
       // Create transaction record
