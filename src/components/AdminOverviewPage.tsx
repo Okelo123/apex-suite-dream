@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useInventory, useUpdateItemStatus } from '@/hooks/useInventory';
 import { useInventory, useUpdateItemStatus } from '@/hooks/useInventory';
 import { useBookings, useCancelBooking } from '@/hooks/useBookings';
 import { useTransactions } from '@/hooks/useTransactions';
