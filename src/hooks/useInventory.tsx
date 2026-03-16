@@ -43,12 +43,21 @@ export function useToggleLockdown() {
 
   return useMutation({
     mutationFn: async (lockdown: boolean) => {
-      const newStatus: ItemStatus = lockdown ? 'lockdown' : 'available';
-      const { error } = await supabase
-        .from('inventory')
-        .update({ status: newStatus });
-      
-      if (error) throw error;
+      if (lockdown) {
+        // Set all non-maintenance items to lockdown
+        const { error } = await supabase
+          .from('inventory')
+          .update({ status: 'lockdown' as ItemStatus })
+          .neq('status', 'maintenance');
+        if (error) throw error;
+      } else {
+        // Restore all lockdown items to available
+        const { error } = await supabase
+          .from('inventory')
+          .update({ status: 'available' as ItemStatus })
+          .eq('status', 'lockdown');
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
