@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useInventory, useUpdateItemStatus } from '@/hooks/useInventory';
-import { useInventory, useUpdateItemStatus } from '@/hooks/useInventory';
+import { useBookings, useCancelBooking } from '@/hooks/useBookings';
 import { useBookings, useCancelBooking } from '@/hooks/useBookings';
 import { useTransactions } from '@/hooks/useTransactions';
 import { Check, X, Wrench, Lock, User, Crown, UtensilsCrossed, CalendarDays, Gem, Trash2, ChevronDown, RotateCcw } from 'lucide-react';
