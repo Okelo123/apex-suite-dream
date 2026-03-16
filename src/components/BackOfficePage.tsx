@@ -34,43 +34,61 @@ export default function BackOfficePage() {
     : {};
   const topRoom = Object.entries(popularRoom).sort((a: any, b: any) => b[1] - a[1])[0]?.[0] || 'N/A';
 
-  const downloadCSV = (filename: string, headers: string[], rows: string[][]) => {
-    const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = filename; a.click();
-    URL.revokeObjectURL(url);
+  const generatePDF = async (title: string, filename: string, tableHeaders: string[], tableRows: string[][]) => {
+    const html2pdf = (await import('html2pdf.js')).default;
+    const el = document.createElement('div');
+    el.innerHTML = `
+      <div style="font-family: Georgia, serif; padding: 40px; color: #1a1a1a;">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <h1 style="font-size: 22px; margin: 0; color: #b8860b;">Apex Estate</h1>
+          <p style="font-size: 14px; color: #666; margin: 6px 0 0;">${title}</p>
+          <p style="font-size: 11px; color: #999;">Generated: ${new Date().toLocaleString()}</p>
+        </div>
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 16px 0;" />
+        <table style="width: 100%; font-size: 11px; border-collapse: collapse;">
+          <thead>
+            <tr>${tableHeaders.map(h => `<th style="text-align: left; padding: 6px 8px; border-bottom: 2px solid #b8860b; color: #666; font-size: 10px; text-transform: uppercase; letter-spacing: 1px;">${h}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${tableRows.map(row => `<tr>${row.map(c => `<td style="padding: 5px 8px; border-bottom: 1px solid #eee;">${c}</td>`).join('')}</tr>`).join('')}
+          </tbody>
+        </table>
+        <p style="text-align: center; font-size: 9px; color: #999; margin-top: 32px;">Apex Estate — Confidential Report</p>
+      </div>
+    `;
+    html2pdf().set({ margin: 10, filename, html2canvas: { scale: 2 }, jsPDF: { orientation: tableHeaders.length > 5 ? 'landscape' : 'portrait' } }).from(el).save();
   };
 
-  const handleRevenueReport = () => {
+  const handleRevenueReport = async () => {
     if (transactions.length === 0) { toast.error('No transactions to export.'); return; }
-    downloadCSV('revenue-report.csv',
+    await generatePDF('Revenue Report', 'revenue-report.pdf',
       ['Ref', 'Guest', 'Amount (KES)', 'Method', 'Items', 'Date'],
-      transactions.map((t: any) => [t.ref, t.guest_name, String(t.amount), t.method, t.items.join('; '), new Date(t.created_at).toLocaleDateString()])
+      transactions.map((t: any) => [t.ref, t.guest_name, `KES ${t.amount.toLocaleString()}`, t.method, t.items.join('; '), new Date(t.created_at).toLocaleDateString()])
     );
     toast.success('Revenue report downloaded.');
   };
 
-  const handleOccupancyReport = () => {
+  const handleOccupancyReport = async () => {
     if (inventory.length === 0) { toast.error('No inventory data.'); return; }
     const suites = inventory.filter(i => i.category === 'suite');
     const occ = suites.filter(i => i.status === 'occupied').length;
     const avail = suites.filter(i => i.status === 'available').length;
     const maint = suites.filter(i => i.status === 'maintenance').length;
-    const rows = [
+    const summaryRows = [
       ['Total Suites', String(suites.length), '', '', ''],
       ['Occupied', String(occ), `${suites.length > 0 ? Math.round((occ / suites.length) * 100) : 0}%`, '', ''],
       ['Available', String(avail), '', '', ''],
       ['Maintenance', String(maint), '', '', ''],
       ['', '', '', '', ''],
-      ['Suite Name', 'Status', 'Price (KES)', 'Guest', 'Booking Ref'],
       ...suites.map(s => {
         const booking: any = bookings.find((b: any) => b.item_id === s.id);
-        return [s.name, s.status, String(s.price), booking?.guest_name || '—', booking?.transaction_ref || '—'];
+        return [s.name, s.status, `KES ${s.price.toLocaleString()}`, booking?.guest_name || '—', booking?.transaction_ref || '—'];
       }),
     ];
-    downloadCSV('occupancy-report.csv', ['Metric', 'Value', 'Rate', '', ''], rows);
+    await generatePDF('Occupancy Report', 'occupancy-report.pdf',
+      ['Suite / Metric', 'Status / Value', 'Rate / Price', 'Guest', 'Booking Ref'],
+      summaryRows
+    );
     toast.success('Occupancy report downloaded.');
   };
 

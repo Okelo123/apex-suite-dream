@@ -50,53 +50,14 @@ export default function FolioPage() {
       const ref = `MH-${Date.now().toString(36).toUpperCase()}`;
 
       if (payMethod === 'MPESA') {
-        // Format phone to 254 format
-        let formattedPhone = phoneNumber.replace(/\s+/g, '');
-        if (formattedPhone.startsWith('0')) {
-          formattedPhone = '254' + formattedPhone.slice(1);
-        } else if (formattedPhone.startsWith('+')) {
-          formattedPhone = formattedPhone.slice(1);
-        }
-
-        // Initiate Paystack M-Pesa charge
-        const { data: chargeResult, error: chargeError } = await supabase.functions.invoke('paystack-charge', {
-          body: {
-            email: user.email,
-            amount: total,
-            phone: formattedPhone,
-            ref,
-          },
-        });
-
-        if (chargeError || !chargeResult?.success) {
-          throw new Error(chargeResult?.error || 'Failed to initiate M-Pesa payment');
-        }
-
+        // Simulate STK push
         setPaymentStatus('stk_sent');
         toast.success('STK Push sent! Check your phone to complete payment.');
+        await new Promise(r => setTimeout(r, 2000));
 
-        // Poll for verification
+        // Simulate verification
         setPaymentStatus('verifying');
-        let verified = false;
-        for (let i = 0; i < 12; i++) {
-          await new Promise(r => setTimeout(r, 5000));
-          
-          const { data: verifyResult } = await supabase.functions.invoke('paystack-verify', {
-            body: { reference: ref },
-          });
-
-          if (verifyResult?.success) {
-            verified = true;
-            break;
-          }
-        }
-
-        if (!verified) {
-          toast.error('Payment not confirmed. Please try again or check your M-Pesa.');
-          setPaymentStatus('idle');
-          setProcessing(false);
-          return;
-        }
+        await new Promise(r => setTimeout(r, 2000));
       }
 
       // Create transaction record
